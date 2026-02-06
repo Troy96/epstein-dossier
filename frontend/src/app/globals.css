@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 90%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground;
+}
+
+/* PDF viewer styles */
+.react-pdf__Page__canvas {
+  margin: 0 auto;
+}
+
+/* Graph canvas styles */
+.force-graph-container canvas {
+  @apply rounded-lg;
+}
+
+/* Search highlight */
+mark {
+  @apply bg-accent/30 text-foreground px-0.5 rounded;
+}
+
+/* Evidence board aesthetic */
+.evidence-card {
+  @apply relative bg-card border border-border rounded-lg;
+}
+
+.evidence-card::before {
+  content: "";
+  @apply absolute -top-1 left-4 w-3 h-3 bg-accent rounded-full;
+}
+
+/* Connection lines */
+.connection-line {
+  @apply stroke-border stroke-1;
+  stroke-dasharray: 4 2;
+}

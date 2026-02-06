@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: epstein-postgres
+    environment:
+      POSTGRES_USER: epstein
+      POSTGRES_PASSWORD: epstein_secret
+      POSTGRES_DB: epstein_dossier
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U epstein -d epstein_dossier"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    container_name: epstein-meilisearch
+    environment:
+      MEILI_MASTER_KEY: epstein_meili_key
+      MEILI_NO_ANALYTICS: true
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5.17-community
+    container_name: epstein-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/epstein_neo4j_secret
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "epstein_neo4j_secret", "RETURN 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  chromadb:
+    image: chromadb/chroma:0.4.22
+    container_name: epstein-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    environment:
+      ANONYMIZED_TELEMETRY: "false"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: epstein-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app/backend
+      - ./data:/app/data
+    environment:
+      DATABASE_URL: postgresql+asyncpg://epstein:epstein_secret@postgres:5432/epstein_dossier
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_KEY: epstein_meili_key
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: epstein_neo4j_secret
+      CHROMADB_HOST: chromadb
+      CHROMADB_PORT: 8000
+      DATA_DIR: /app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: epstein-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  meilisearch_data:
+  neo4j_data:
+  chromadb_data:
