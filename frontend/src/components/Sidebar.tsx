@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Search,
@@ -38,13 +37,8 @@ export function Sidebar() {
     return pathname === href || pathname.startsWith(href + "/");
   };
 
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
-    // If clicking on current route, force a refresh to reset component state
-    if (pathname === href || (href !== "/" && pathname.startsWith(href))) {
-      e.preventDefault();
-      router.push(href);
-      router.refresh();
-    }
+  const handleNavigation = (href: string) => {
+    router.push(href);
   };
 
   return (
@@ -56,9 +50,9 @@ export function Sidebar() {
             const active = isActive(item.href, item.id);
             return (
               <li key={item.id}>
-                <Link
-                  href={item.href}
-                  onClick={(e) => handleNavClick(e, item.href)}
+                <button
+                  type="button"
+                  onClick={() => handleNavigation(item.href)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                     active
@@ -68,7 +62,7 @@ export function Sidebar() {
                 >
                   <Icon className="h-5 w-5 flex-shrink-0" />
                   <span className="hidden lg:block">{item.label}</span>
-                </Link>
+                </button>
               </li>
             );
           })}
@@ -79,10 +73,10 @@ export function Sidebar() {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (
-            <Link
+            <button
               key={item.id}
-              href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
+              type="button"
+              onClick={() => handleNavigation(item.href)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                 active
@@ -92,7 +86,7 @@ export function Sidebar() {
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
               <span className="hidden lg:block">{item.label}</span>
-            </Link>
+            </button>
           );
         })}
       </div>
