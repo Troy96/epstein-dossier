@@ -30,24 +30,9 @@ export default function MainLayout({
     ? "document"
     : pathToView[pathname] || "search";
 
-  const handleViewChange = (view: ViewType) => {
-    const routes: Record<ViewType, string> = {
-      search: "/",
-      documents: "/documents",
-      document: "/documents",
-      entities: "/entities",
-      faces: "/faces",
-      graph: "/graph",
-      timeline: "/timeline",
-      bookmarks: "/bookmarks",
-      settings: "/settings",
-    };
-    router.push(routes[view]);
-  };
-
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar currentView={currentView} onViewChange={handleViewChange} />
+      <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header currentView={currentView} onSearch={() => router.push("/")} />
         <main className="flex-1 overflow-auto p-4">{children}</main>
