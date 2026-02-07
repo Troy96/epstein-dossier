@@ -13,6 +13,7 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
+  ArrowUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -43,20 +44,21 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntities, setTotalEntities] = useState(0);
+  const [sortBy, setSortBy] = useState<"document_count" | "name" | "mention_count">("document_count");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
 
-  // Load entities on mount and when filter/page changes
+  // Load entities on mount and when filter/page/sort changes
   useEffect(() => {
     loadEntities();
-  }, [entityType, page]);
+  }, [entityType, page, sortBy]);
 
   const loadEntities = async (resetPage = false) => {
     setLoading(true);
     const currentPage = resetPage ? 1 : page;
     if (resetPage) setPage(1);
     try {
-      const data = await getEntities(currentPage, 50, entityType, searchTerm || undefined);
+      const data = await getEntities(currentPage, 50, entityType, searchTerm || undefined, sortBy);
       setEntities(data.entities);
       setTotalPages(data.total_pages);
       setTotalEntities(data.total);
@@ -205,6 +207,30 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
           <Button size="sm" onClick={handleSearch}>
             Go
           </Button>
+        </div>
+
+        {/* Sort Options */}
+        <div className="flex items-center gap-2 mb-3">
+          <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Sort:</span>
+          <div className="flex gap-1">
+            <Button
+              variant={sortBy === "document_count" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSortBy("document_count")}
+              className="h-7 px-2 text-xs"
+            >
+              By Count
+            </Button>
+            <Button
+              variant={sortBy === "name" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSortBy("name")}
+              className="h-7 px-2 text-xs"
+            >
+              A-Z
+            </Button>
+          </div>
         </div>
 
         {/* Entity Count */}
