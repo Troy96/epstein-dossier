@@ -324,6 +324,10 @@ export async function getTimelineByYear(): Promise<{ year: number; count: number
   return fetchAPI("/api/timeline/by-year");
 }
 
+export async function getTimelineByMonth(year: number): Promise<{ month: number; count: number }[]> {
+  return fetchAPI(`/api/timeline/by-month?year=${year}`);
+}
+
 // Annotations
 export interface Annotation {
   id: number;
