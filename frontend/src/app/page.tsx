@@ -93,10 +93,7 @@ export default function Home() {
       case "graph":
         return (
           <GraphView
-            documentId={selectedDocumentId}
-            entityId={selectedEntityId}
             onDocumentSelect={handleDocumentSelect}
-            onEntitySelect={handleEntitySelect}
           />
         );
       case "timeline":
