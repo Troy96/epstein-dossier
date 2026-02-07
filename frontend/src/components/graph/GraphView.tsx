@@ -11,6 +11,8 @@ import {
   Search,
   Building,
   MapPin,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -38,19 +40,26 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
   const [graphLoading, setGraphLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [entityType, setEntityType] = useState<string>("PERSON");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEntities, setTotalEntities] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
 
-  // Load entities on mount and when filter changes
+  // Load entities on mount and when filter/page changes
   useEffect(() => {
     loadEntities();
-  }, [entityType]);
+  }, [entityType, page]);
 
-  const loadEntities = async () => {
+  const loadEntities = async (resetPage = false) => {
     setLoading(true);
+    const currentPage = resetPage ? 1 : page;
+    if (resetPage) setPage(1);
     try {
-      const data = await getEntities(1, 30, entityType, searchTerm || undefined);
+      const data = await getEntities(currentPage, 50, entityType, searchTerm || undefined);
       setEntities(data.entities);
+      setTotalPages(data.total_pages);
+      setTotalEntities(data.total);
     } catch (error) {
       console.error("Failed to load entities:", error);
     } finally {
@@ -59,7 +68,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
   };
 
   const handleSearch = () => {
-    loadEntities();
+    loadEntities(true); // Reset to page 1 on search
   };
 
   const handleEntitySelect = async (entity: Entity) => {
@@ -198,6 +207,13 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
           </Button>
         </div>
 
+        {/* Entity Count */}
+        {!loading && totalEntities > 0 && (
+          <div className="text-xs text-muted-foreground mb-2">
+            {totalEntities.toLocaleString()} {entityType === "PERSON" ? "people" : entityType === "ORG" ? "organizations" : "places"} found
+          </div>
+        )}
+
         {/* Entity List */}
         <Card className="flex-1 overflow-hidden">
           <CardContent className="p-0 h-full overflow-auto">
@@ -230,6 +246,31 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
             )}
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Right Panel - Graph */}
