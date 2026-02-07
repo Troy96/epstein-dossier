@@ -25,7 +25,8 @@ async def list_entities(
     page_size: int = Query(20, ge=1, le=100),
     entity_type: str | None = Query(None, description="Filter by type: PERSON, ORG, GPE, LOC"),
     search: str | None = Query(None, description="Search by name"),
-    sort_by: str = Query("mention_count", description="Sort by: mention_count, name, document_count"),
+    sort_by: str | None = Query(None, description="Sort by: mention_count, name, document_count"),
+    sort_dir: str = Query("desc", description="Sort direction: asc or desc"),
     db: AsyncSession = Depends(get_db),
 ) -> EntityListResponse:
     """List entities with pagination and filters."""
@@ -43,12 +44,16 @@ async def list_entities(
     total = total_result.scalar() or 0
 
     # Apply sorting
+    is_asc = sort_dir.lower() == "asc"
     if sort_by == "name":
-        query = query.order_by(Entity.name)
+        query = query.order_by(Entity.name.asc() if is_asc else Entity.name.desc())
     elif sort_by == "document_count":
-        query = query.order_by(Entity.document_count.desc())
+        query = query.order_by(Entity.document_count.asc() if is_asc else Entity.document_count.desc())
+    elif sort_by == "mention_count":
+        query = query.order_by(Entity.mention_count.asc() if is_asc else Entity.mention_count.desc())
     else:
-        query = query.order_by(Entity.mention_count.desc())
+        # Default sort by document_count desc
+        query = query.order_by(Entity.document_count.desc())
 
     # Paginate
     query = query.offset((page - 1) * page_size).limit(page_size)

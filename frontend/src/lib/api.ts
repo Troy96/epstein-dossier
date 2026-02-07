@@ -1,4 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+// Use empty string for client-side to leverage Next.js rewrites proxy
+// The rewrites in next.config.js will proxy /api/* to the backend
+const API_BASE = typeof window === "undefined"
+  ? (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080")
+  : "";
 
 async function fetchAPI<T>(
   endpoint: string,
@@ -132,7 +136,8 @@ export async function getEntities(
   pageSize: number = 20,
   entityType?: string,
   search?: string,
-  sortBy?: "mention_count" | "name" | "document_count"
+  sortBy?: "mention_count" | "name" | "document_count" | null,
+  sortDir?: "asc" | "desc"
 ): Promise<EntityListResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -141,6 +146,7 @@ export async function getEntities(
   if (entityType) params.append("entity_type", entityType);
   if (search) params.append("search", search);
   if (sortBy) params.append("sort_by", sortBy);
+  if (sortDir) params.append("sort_dir", sortDir);
   return fetchAPI(`/api/entities?${params}`);
 }
 
