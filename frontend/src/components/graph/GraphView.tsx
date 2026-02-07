@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Network, ZoomIn, ZoomOut, Maximize, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Network, ZoomIn, ZoomOut, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { LoadingState, EmptyState } from "@/components/ui/Spinner";
 import {
   getDocumentConnections,
   getEntityConnections,
-  DocumentConnectionsResponse,
-  EntityConnectionsResponse,
+  getEntities,
   GraphData,
+  Entity,
 } from "@/lib/api";
 
 interface GraphViewProps {
@@ -31,14 +32,33 @@ export function GraphView({
   const [title, setTitle] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
+  const [topEntities, setTopEntities] = useState<Entity[]>([]);
+  const [selectedEntityForGraph, setSelectedEntityForGraph] = useState<number | null>(null);
 
   useEffect(() => {
     if (documentId) {
       loadDocumentGraph(documentId);
     } else if (entityId) {
       loadEntityGraph(entityId);
+    } else {
+      // Load top entities for exploration
+      loadTopEntities();
     }
   }, [documentId, entityId]);
+
+  const loadTopEntities = async () => {
+    try {
+      const data = await getEntities(1, 10, "PERSON");
+      setTopEntities(data.entities);
+    } catch (error) {
+      console.error("Failed to load top entities:", error);
+    }
+  };
+
+  const handleEntityClick = (entity: Entity) => {
+    setSelectedEntityForGraph(entity.id);
+    loadEntityGraph(entity.id);
+  };
 
   const loadDocumentGraph = async (id: number) => {
     setLoading(true);
@@ -142,22 +162,63 @@ export function GraphView({
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.2, 0.5));
   const handleReset = () => setZoom(1);
 
-  if (!documentId && !entityId) {
+  if (!documentId && !entityId && !selectedEntityForGraph) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <Network className="h-16 w-16 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Graph Visualization</h2>
-        <p className="text-muted-foreground text-center max-w-md mb-6">
-          View connections between documents and entities. The graph shows how documents
-          are related through shared entities (people, organizations, locations).
-        </p>
-        <div className="text-sm text-muted-foreground">
-          <p className="mb-2">To explore connections:</p>
-          <ol className="list-decimal list-inside space-y-1">
-            <li>Search for a document or entity</li>
-            <li>Click &quot;View Connections&quot; in the document view</li>
-            <li>Or select an entity from the Entities tab</li>
-          </ol>
+      <div className="h-full flex flex-col">
+        <div className="flex items-center gap-2 mb-4">
+          <Network className="h-5 w-5 text-primary" />
+          <h2 className="font-medium text-lg">Graph Visualization</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Instructions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">How to Use</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <p>
+                The graph shows connections between documents and entities (people,
+                organizations, locations) mentioned in them.
+              </p>
+              <p className="font-medium text-foreground mt-4">To explore:</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Click on a person below to see their connections</li>
+                <li>Or search for a document and click &quot;View Connections&quot;</li>
+                <li>Or go to Entities and select any entity</li>
+              </ol>
+            </CardContent>
+          </Card>
+
+          {/* Top Entities to Explore */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Top People to Explore
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topEntities.length > 0 ? (
+                <div className="space-y-2">
+                  {topEntities.map((entity) => (
+                    <button
+                      key={entity.id}
+                      onClick={() => handleEntityClick(entity)}
+                      className="w-full p-2 rounded-lg bg-muted hover:bg-muted/80 text-left transition-colors flex items-center justify-between"
+                    >
+                      <span className="font-medium truncate">{entity.name}</span>
+                      <Badge variant="secondary" className="ml-2">
+                        {entity.document_count} docs
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">Loading entities...</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

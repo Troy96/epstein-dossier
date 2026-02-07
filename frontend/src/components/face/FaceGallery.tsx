@@ -164,10 +164,38 @@ export function FaceGallery({
                   )}
                 </>
               ) : (
-                <EmptyState
-                  title="No faces detected yet"
-                  description="Face detection requires the face_recognition library (dlib). Install it with 'pip install face-recognition cmake' then run 'python -m app.cli faces' from the backend directory."
-                />
+                <div className="h-full flex flex-col items-center justify-center p-8">
+                  <ScanFace className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-semibold mb-2">Face Detection</h2>
+                  <p className="text-muted-foreground text-center max-w-lg mb-6">
+                    This feature detects and extracts faces from document images,
+                    allowing you to search for similar faces across all documents.
+                  </p>
+
+                  <Card className="max-w-md w-full">
+                    <CardHeader>
+                      <CardTitle className="text-sm text-amber-500">Setup Required</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-3">
+                      <p className="text-muted-foreground">
+                        Face detection requires the <code className="bg-muted px-1 rounded">face_recognition</code> library
+                        which depends on dlib and CMake.
+                      </p>
+                      <div className="bg-muted p-3 rounded-lg font-mono text-xs space-y-1">
+                        <p># Install dependencies</p>
+                        <p>brew install cmake</p>
+                        <p>pip install face-recognition</p>
+                        <p></p>
+                        <p># Run face detection</p>
+                        <p>cd backend</p>
+                        <p>python -m app.cli faces</p>
+                      </div>
+                      <p className="text-muted-foreground text-xs">
+                        Note: dlib compilation can take several minutes.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
               )
             ) : clusters.length > 0 ? (
               <div className="space-y-6">
