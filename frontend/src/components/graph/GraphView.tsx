@@ -64,13 +64,14 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
   const [layout, setLayout] = useState<LayoutType>("circular");
   const [showDocuments, setShowDocuments] = useState(true);
   const [showEntities, setShowEntities] = useState(true);
-  const [nodePositions, setNodePositions] = useState<Record<string, NodePosition>>({});
+  const nodePositionsRef = useRef<Record<string, NodePosition>>({});
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const animationRef = useRef<number | null>(null);
+  const [, forceRender] = useState(0);
 
   // Load entities on mount and when filter/page/sort changes
   useEffect(() => {
@@ -122,7 +123,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
       // Reset graph state
       setZoom(1);
       setPanOffset({ x: 0, y: 0 });
-      setNodePositions({});
+      nodePositionsRef.current = {};
     } catch (error) {
       console.error("Failed to load graph:", error);
     } finally {
@@ -135,7 +136,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
     setGraphData(null);
     setZoom(1);
     setPanOffset({ x: 0, y: 0 });
-    setNodePositions({});
+    nodePositionsRef.current = {};
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
     }
@@ -206,7 +207,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
     } else if (layout === "force") {
       // Use existing positions or initialize randomly
       nodes.forEach((node) => {
-        if (!nodePositions[node.id]) {
+        if (!nodePositionsRef.current[node.id]) {
           positions[node.id] = {
             x: centerX + (Math.random() - 0.5) * radius * 2,
             y: centerY + (Math.random() - 0.5) * radius * 2,
@@ -214,13 +215,13 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
             vy: 0,
           };
         } else {
-          positions[node.id] = { ...nodePositions[node.id] };
+          positions[node.id] = { ...nodePositionsRef.current[node.id] };
         }
       });
     }
 
     return positions;
-  }, [layout, zoom, panOffset, nodePositions]);
+  }, [layout, zoom, panOffset]);
 
   // Force-directed layout simulation
   const runForceSimulation = useCallback((nodes: GraphNode[], edges: { source: string; target: string }[], positions: Record<string, NodePosition>) => {
@@ -312,7 +313,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
     const render = () => {
       if (layout === "force") {
         positions = runForceSimulation(nodes, edges, positions);
-        setNodePositions({ ...positions });
+        nodePositionsRef.current = positions;
       }
 
       ctx.fillStyle = "#0a0a0f";
@@ -378,9 +379,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
     render();
 
     // Store positions for hit detection
-    if (layout !== "force") {
-      setNodePositions(positions);
-    }
+    nodePositionsRef.current = positions;
 
     return () => {
       if (animationRef.current) {
@@ -395,7 +394,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
     const { nodes } = getFilteredData();
 
     for (const node of nodes) {
-      const pos = nodePositions[node.id];
+      const pos = nodePositionsRef.current[node.id];
       if (!pos) continue;
 
       const nodeRadius = 8 * node.size * zoom;
@@ -408,7 +407,7 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
       }
     }
     return null;
-  }, [graphData, nodePositions, zoom, getFilteredData]);
+  }, [graphData, zoom, getFilteredData]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -419,10 +418,10 @@ export function GraphView({ onDocumentSelect }: GraphViewProps) {
     const y = e.clientY - rect.top;
 
     if (isDragging && draggedNode && layout === "force") {
-      setNodePositions(prev => ({
-        ...prev,
-        [draggedNode]: { ...prev[draggedNode], x, y, vx: 0, vy: 0 }
-      }));
+      nodePositionsRef.current = {
+        ...nodePositionsRef.current,
+        [draggedNode]: { ...nodePositionsRef.current[draggedNode], x, y, vx: 0, vy: 0 }
+      };
       return;
     }
 
