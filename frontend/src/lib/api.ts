@@ -241,6 +241,10 @@ export async function findSimilarFaces(faceId: number, limit: number = 10): Prom
   return fetchAPI(`/api/faces/${faceId}/similar?${params}`);
 }
 
+export async function dismissFace(faceId: number): Promise<void> {
+  await fetchAPI(`/api/faces/${faceId}`, { method: "DELETE" });
+}
+
 // Graph
 export interface GraphNode {
   id: string;
@@ -385,6 +389,75 @@ export async function deleteAnnotation(id: number): Promise<void> {
 
 export async function getBookmarks(): Promise<AnnotationListResponse> {
   return fetchAPI("/api/annotations/bookmarks/all");
+}
+
+// Image Analysis
+export interface ImageAnalysisItem {
+  id: number;
+  document_id: number;
+  image_path: string;
+  description: string | null;
+  tags: string[] | null;
+  category: string | null;
+  interest_score: number;
+  flagged: boolean;
+  flag_reason: string | null;
+  created_at: string;
+  document_filename: string | null;
+}
+
+export interface ImageAnalysisListResponse {
+  analyses: ImageAnalysisItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface ImageAnalysisStats {
+  total_analyzed: number;
+  total_flagged: number;
+  by_category: Record<string, number>;
+  avg_interest_score: number;
+}
+
+export async function getImageAnalyses(
+  page: number = 1,
+  pageSize: number = 20,
+  category?: string,
+  flagged?: boolean,
+  minScore?: number,
+  sortBy?: string,
+  sortDir?: string
+): Promise<ImageAnalysisListResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+  });
+  if (category) params.append("category", category);
+  if (flagged !== undefined) params.append("flagged", flagged.toString());
+  if (minScore !== undefined) params.append("min_score", minScore.toString());
+  if (sortBy) params.append("sort_by", sortBy);
+  if (sortDir) params.append("sort_dir", sortDir);
+  return fetchAPI(`/api/image-analysis?${params}`);
+}
+
+export async function getImageAnalysis(id: number): Promise<ImageAnalysisItem> {
+  return fetchAPI(`/api/image-analysis/${id}`);
+}
+
+export async function getImageAnalysisStats(): Promise<ImageAnalysisStats> {
+  return fetchAPI("/api/image-analysis/stats");
+}
+
+export async function updateImageAnalysis(
+  id: number,
+  data: Partial<Pick<ImageAnalysisItem, "tags" | "category" | "interest_score" | "flagged" | "flag_reason">>
+): Promise<ImageAnalysisItem> {
+  return fetchAPI(`/api/image-analysis/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 // Stats

@@ -114,7 +114,7 @@ async def get_document_images(
     images = []
     if images_dir.exists():
         images = sorted([
-            f"/api/images/{base_name}/{f.name}"
+            f"/api/static/images/{base_name}/{f.name}"
             for f in images_dir.iterdir()
             if f.suffix.lower() in [".png", ".jpg", ".jpeg"]
         ])

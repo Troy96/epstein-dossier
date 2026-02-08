@@ -1,7 +1,7 @@
 """Face detection and clustering models."""
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON, Index, Boolean
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
@@ -59,6 +59,9 @@ class Face(Base):
 
     # Embedding reference (stored in ChromaDB)
     embedding_id = Column(String(100), unique=True, index=True)
+
+    # Dismissed (false positive)
+    dismissed = Column(Boolean, default=False, index=True)
 
     # Extra data
     extra_data = Column(JSON)

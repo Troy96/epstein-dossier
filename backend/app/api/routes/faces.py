@@ -31,7 +31,7 @@ async def list_faces(
     db: AsyncSession = Depends(get_db),
 ) -> FaceListResponse:
     """List detected faces with pagination."""
-    query = select(Face, Document.filename).join(Document, Document.id == Face.document_id)
+    query = select(Face, Document.filename).join(Document, Document.id == Face.document_id).where(Face.dismissed == False)
 
     if document_id:
         query = query.where(Face.document_id == document_id)
@@ -43,7 +43,7 @@ async def list_faces(
         query = query.where(Face.cluster_id.is_(None))
 
     # Get total count
-    count_base = select(Face)
+    count_base = select(Face).where(Face.dismissed == False)
     if document_id:
         count_base = count_base.where(Face.document_id == document_id)
     if cluster_id:
@@ -181,7 +181,7 @@ async def find_similar_faces(
     chromadb = get_chromadb_service()
     embedding_data = chromadb.get_embedding(embedding_id)
 
-    if not embedding_data or not embedding_data["embedding"]:
+    if not embedding_data or embedding_data["embedding"] is None:
         raise HTTPException(status_code=404, detail="Embedding not found")
 
     # Search for similar faces
@@ -298,6 +298,50 @@ async def search_faces_by_image(
     finally:
         import os
         os.unlink(tmp_path)
+
+
+@router.delete("/{face_id}")
+async def dismiss_face(
+    face_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Dismiss a false positive face detection. Keeps embedding for future filtering."""
+    result = await db.execute(select(Face).where(Face.id == face_id))
+    face = result.scalar_one_or_none()
+
+    if not face:
+        raise HTTPException(status_code=404, detail="Face not found")
+
+    # Move embedding to dismissed collection for future filtering
+    if face.embedding_id:
+        try:
+            chromadb = get_chromadb_service()
+            emb_data = chromadb.get_embedding(face.embedding_id)
+            if emb_data and emb_data["embedding"]:
+                chromadb.add_dismissed_embedding(
+                    embedding_id=face.embedding_id,
+                    embedding=emb_data["embedding"],
+                    metadata={"face_id": face.id, "face_size": face.face_size or 0},
+                )
+            chromadb.delete_embedding(face.embedding_id)
+        except Exception:
+            pass
+
+    # Delete the face crop file
+    if face.face_crop_path:
+        import os
+        abs_path = str(settings.faces_dir) + face.face_crop_path.replace("/static/faces", "", 1) if face.face_crop_path.startswith("/static/faces") else face.face_crop_path
+        try:
+            os.unlink(abs_path)
+        except OSError:
+            pass
+
+    # Mark as dismissed instead of deleting
+    face.dismissed = True
+    face.face_crop_path = None
+    await db.commit()
+
+    return {"status": "ok", "dismissed_face_id": face_id}
 
 
 @router.get("/clusters/{cluster_id}", response_model=FaceClusterResponse)

@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # DOJ Source
     doj_base_url: str = "https://www.justice.gov/epstein/doj-disclosures/data-set-1-files"
 
+    # Anthropic API
+    anthropic_api_key: str = ""
+
     # Processing
     max_workers: int = 4
     batch_size: int = 50

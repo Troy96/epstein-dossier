@@ -32,6 +32,7 @@ class Document(Base):
     ocr_status = Column(String(50), default="pending")  # pending, completed, failed
     entity_status = Column(String(50), default="pending")  # pending, completed, failed
     face_status = Column(String(50), default="pending")  # pending, completed, failed
+    image_analysis_status = Column(String(50), default="pending")  # pending, completed, failed
     indexed_status = Column(String(50), default="pending")  # pending, indexed, failed
 
     # Dates extracted from content
@@ -46,6 +47,7 @@ class Document(Base):
     # Relationships
     entity_mentions = relationship("EntityMention", back_populates="document", cascade="all, delete-orphan")
     faces = relationship("Face", back_populates="document", cascade="all, delete-orphan")
+    image_analyses = relationship("ImageAnalysis", back_populates="document", cascade="all, delete-orphan")
     annotations = relationship("Annotation", back_populates="document", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:

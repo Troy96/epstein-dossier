@@ -83,6 +83,20 @@ def faces(
 
 
 @app.command()
+def analyze_images(
+    limit: int = typer.Option(None, help="Limit number of documents to process"),
+    reprocess: bool = typer.Option(False, help="Reprocess already completed documents"),
+):
+    """Analyze document images using Claude Vision AI."""
+    from app.pipelines.image_analysis import ImageAnalyzer
+
+    session = get_session()
+    analyzer = ImageAnalyzer(session)
+    analyzer.process_all(limit=limit, reprocess=reprocess)
+    session.close()
+
+
+@app.command()
 def index(
     limit: int = typer.Option(None, help="Limit number of documents to index"),
     reindex: bool = typer.Option(False, help="Reindex already indexed documents"),
@@ -156,13 +170,14 @@ def status():
     table.add_column("OCR")
     table.add_column("Entities")
     table.add_column("Faces")
+    table.add_column("Images AI")
     table.add_column("Indexed")
 
     statuses = ["pending", "completed", "downloaded", "indexed", "failed"]
 
     for status in statuses:
         row = [status]
-        for field in ["download_status", "ocr_status", "entity_status", "face_status", "indexed_status"]:
+        for field in ["download_status", "ocr_status", "entity_status", "face_status", "image_analysis_status", "indexed_status"]:
             result = session.execute(
                 select(func.count(Document.id)).where(getattr(Document, field) == status)
             )

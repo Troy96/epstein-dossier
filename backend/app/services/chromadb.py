@@ -13,6 +13,7 @@ class ChromaDBService:
     """Service for face embedding storage and similarity search."""
 
     COLLECTION_NAME = "face_embeddings"
+    DISMISSED_COLLECTION_NAME = "dismissed_face_embeddings"
 
     def __init__(self) -> None:
         # Use persistent local storage
@@ -40,10 +41,14 @@ class ChromaDBService:
         self._ensure_collection()
 
     def _ensure_collection(self) -> None:
-        """Ensure the face embeddings collection exists."""
+        """Ensure the face embeddings collections exist."""
         self.collection = self.client.get_or_create_collection(
             name=self.COLLECTION_NAME,
             metadata={"description": "Face embeddings for similarity search"},
+        )
+        self.dismissed_collection = self.client.get_or_create_collection(
+            name=self.DISMISSED_COLLECTION_NAME,
+            metadata={"description": "Dismissed false positive face embeddings"},
         )
 
     def add_face_embedding(
@@ -97,8 +102,8 @@ class ChromaDBService:
         if result["ids"]:
             return {
                 "id": result["ids"][0],
-                "embedding": result["embeddings"][0] if result["embeddings"] else None,
-                "metadata": result["metadatas"][0] if result["metadatas"] else None,
+                "embedding": result["embeddings"][0] if result["embeddings"] is not None and len(result["embeddings"]) > 0 else None,
+                "metadata": result["metadatas"][0] if result["metadatas"] is not None and len(result["metadatas"]) > 0 else None,
             }
         return None
 
@@ -110,6 +115,36 @@ class ChromaDBService:
         """Delete all embeddings."""
         self.client.delete_collection(self.COLLECTION_NAME)
         self._ensure_collection()
+
+    def add_dismissed_embedding(
+        self,
+        embedding_id: str,
+        embedding: list[float],
+        metadata: dict | None = None,
+    ) -> None:
+        """Add a dismissed face embedding for future filtering."""
+        self.dismissed_collection.add(
+            ids=[embedding_id],
+            embeddings=[embedding],
+            metadatas=[metadata or {}],
+        )
+
+    def is_similar_to_dismissed(
+        self,
+        embedding: list[float],
+        threshold: float = 0.4,
+    ) -> bool:
+        """Check if an embedding is similar to any dismissed face."""
+        if self.dismissed_collection.count() == 0:
+            return False
+        results = self.dismissed_collection.query(
+            query_embeddings=[embedding],
+            n_results=1,
+            include=["distances"],
+        )
+        if results["distances"] is not None and len(results["distances"]) > 0 and len(results["distances"][0]) > 0:
+            return results["distances"][0][0] < threshold
+        return False
 
     def count(self) -> int:
         """Get total number of embeddings."""

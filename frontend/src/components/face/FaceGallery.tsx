@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ScanFace, Search, Grid, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { ScanFace, Search, Grid, Layers, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +10,7 @@ import {
   getFaces,
   getFaceClusters,
   findSimilarFaces,
+  dismissFace,
   Face,
   FaceCluster,
   FaceSimilarityResult,
@@ -98,6 +99,20 @@ export function FaceGallery({
     loadFaceDetails(face.id);
   };
 
+  const handleDismissFace = async (faceId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      await dismissFace(faceId);
+      setFaces((prev) => prev.filter((f) => f.id !== faceId));
+      if (selectedFace?.id === faceId) {
+        setSelectedFace(null);
+        setSimilarFaces([]);
+      }
+    } catch (error) {
+      console.error("Failed to dismiss face:", error);
+    }
+  };
+
   return (
     <div className="flex gap-4 h-full">
       {/* Face Grid */}
@@ -135,6 +150,7 @@ export function FaceGallery({
                         face={face}
                         selected={selectedFace?.id === face.id}
                         onClick={() => handleFaceClick(face)}
+                        onDismiss={(e) => handleDismissFace(face.id, e)}
                       />
                     ))}
                   </div>
@@ -224,8 +240,16 @@ export function FaceGallery({
           <div className="space-y-4">
             {/* Selected Face */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm">Selected Face</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-red-500 h-7 text-xs"
+                  onClick={() => handleDismissFace(selectedFace.id)}
+                >
+                  Not a face
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="aspect-square rounded-lg overflow-hidden bg-muted mb-4">
@@ -323,31 +347,42 @@ function FaceCard({
   face,
   selected,
   onClick,
+  onDismiss,
 }: {
   face: Face;
   selected: boolean;
   onClick: () => void;
+  onDismiss: (e: React.MouseEvent) => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "aspect-square rounded-lg overflow-hidden bg-muted transition-all",
-        selected && "ring-2 ring-primary"
-      )}
-    >
-      {face.face_crop_path ? (
-        <img
-          src={`/api${face.face_crop_path}`}
-          alt="Face"
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <ScanFace className="h-6 w-6 text-muted-foreground" />
-        </div>
-      )}
-    </button>
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        className={cn(
+          "aspect-square rounded-lg overflow-hidden bg-muted transition-all w-full",
+          selected && "ring-2 ring-primary"
+        )}
+      >
+        {face.face_crop_path ? (
+          <img
+            src={`/api${face.face_crop_path}`}
+            alt="Face"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ScanFace className="h-6 w-6 text-muted-foreground" />
+          </div>
+        )}
+      </button>
+      <button
+        onClick={onDismiss}
+        className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-red-600 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Not a face"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </div>
   );
 }
 

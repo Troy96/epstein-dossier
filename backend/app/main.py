@@ -36,14 +36,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include API routes (must be before static mounts to take priority)
+app.include_router(api_router, prefix="/api")
+
 # Static file serving for images and face crops
 if settings.images_dir.exists():
-    app.mount("/api/images", StaticFiles(directory=str(settings.images_dir)), name="images")
+    app.mount("/api/static/images", StaticFiles(directory=str(settings.images_dir)), name="images")
 if settings.faces_dir.exists():
-    app.mount("/api/faces", StaticFiles(directory=str(settings.faces_dir)), name="faces")
-
-# Include API routes
-app.include_router(api_router, prefix="/api")
+    app.mount("/api/static/faces", StaticFiles(directory=str(settings.faces_dir)), name="faces")
 
 
 @app.get("/")

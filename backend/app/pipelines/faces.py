@@ -141,6 +141,10 @@ class FaceProcessor:
                 faces = self.detect_faces_in_image(image_path)
 
                 for face_data in faces:
+                    # Skip if similar to a dismissed face
+                    if chromadb.is_similar_to_dismissed(face_data["encoding"]):
+                        continue
+
                     # Generate unique ID
                     embedding_id = f"face_{uuid.uuid4().hex[:16]}"
 
@@ -274,7 +278,7 @@ class FaceProcessor:
 
         for face in faces:
             emb_data = chromadb.get_embedding(face.embedding_id)
-            if emb_data and emb_data["embedding"]:
+            if emb_data and emb_data["embedding"] is not None:
                 embeddings.append(emb_data["embedding"])
                 face_ids.append(face.id)
 

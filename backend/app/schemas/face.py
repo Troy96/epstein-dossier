@@ -1,7 +1,9 @@
 """Face schemas."""
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
+
+from app.core.config import settings
 
 
 class FaceResponse(BaseModel):
@@ -19,6 +21,17 @@ class FaceResponse(BaseModel):
     confidence: float | None
     created_at: datetime
     document_filename: str | None = None
+
+    @model_validator(mode="after")
+    def normalize_paths(self) -> "FaceResponse":
+        """Convert absolute filesystem paths to relative URL paths."""
+        faces_dir = str(settings.faces_dir)
+        if self.face_crop_path and self.face_crop_path.startswith(faces_dir):
+            self.face_crop_path = "/static/faces" + self.face_crop_path[len(faces_dir):]
+        images_dir = str(settings.images_dir)
+        if self.image_path and self.image_path.startswith(images_dir):
+            self.image_path = "/static/images" + self.image_path[len(images_dir):]
+        return self
 
 
 class FaceListResponse(BaseModel):
