@@ -40,6 +40,8 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [yearCounts, setYearCounts] = useState<{ year: number; count: number }[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [yearRangeStart, setYearRangeStart] = useState<number | null>(null);
+  const [yearRangeEnd, setYearRangeEnd] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [range, setRange] = useState<{ min: string | null; max: string | null }>({
@@ -63,8 +65,10 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
   useEffect(() => {
     if (selectedYear) {
       loadYearEvents(selectedYear);
+    } else if (yearRangeStart && yearRangeEnd) {
+      loadRangeEvents(yearRangeStart, yearRangeEnd);
     }
-  }, [selectedYear, entityFilter]);
+  }, [selectedYear, yearRangeStart, yearRangeEnd, entityFilter]);
 
   // Entity search
   useEffect(() => {
@@ -86,8 +90,11 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
       setRange({ min: rangeData.min_date, max: rangeData.max_date });
       setYearCounts(yearData);
 
-      // Select year with most events
+      // Set initial range to all years, select the one with most events
       if (yearData.length > 0) {
+        const years = yearData.map((y) => y.year);
+        setYearRangeStart(Math.min(...years));
+        setYearRangeEnd(Math.max(...years));
         const maxYear = yearData.reduce((max, curr) =>
           curr.count > max.count ? curr : max
         );
@@ -109,6 +116,20 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
       setEvents(data.events);
     } catch (error) {
       console.error("Failed to load year events:", error);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const loadRangeEvents = async (startYear: number, endYear: number) => {
+    setEventsLoading(true);
+    try {
+      const startDate = `${startYear}-01-01`;
+      const endDate = `${endYear}-12-31`;
+      const data = await getTimeline(startDate, endDate, entityFilter?.id);
+      setEvents(data.events);
+    } catch (error) {
+      console.error("Failed to load range events:", error);
     } finally {
       setEventsLoading(false);
     }
@@ -158,8 +179,20 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
     "July", "August", "September", "October", "November", "December"
   ];
 
+  // Filter years by range
+  const filteredYearCounts = useMemo(() => {
+    if (!yearRangeStart || !yearRangeEnd) return yearCounts;
+    return yearCounts.filter(
+      (y) => y.year >= yearRangeStart && y.year <= yearRangeEnd
+    );
+  }, [yearCounts, yearRangeStart, yearRangeEnd]);
+
+  const allYears = useMemo(() => yearCounts.map((y) => y.year), [yearCounts]);
+  const minYear = allYears.length > 0 ? Math.min(...allYears) : 1900;
+  const maxYear = allYears.length > 0 ? Math.max(...allYears) : 2025;
+
   // Calculate max count for chart scaling
-  const maxYearCount = Math.max(...yearCounts.map((y) => y.count), 1);
+  const maxYearCount = Math.max(...filteredYearCounts.map((y) => y.count), 1);
 
   const getEntityIcon = (type: string) => {
     switch (type) {
@@ -208,7 +241,53 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Year Range Filter */}
+          <div className="flex items-center gap-1.5 bg-muted border border-border rounded-md px-2 py-1">
+            <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <select
+              value={yearRangeStart ?? minYear}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setYearRangeStart(val);
+                if (yearRangeEnd && val > yearRangeEnd) setYearRangeEnd(val);
+                if (selectedYear && selectedYear < val) setSelectedYear(val);
+              }}
+              className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
+            >
+              {allYears.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <span className="text-muted-foreground text-sm">–</span>
+            <select
+              value={yearRangeEnd ?? maxYear}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setYearRangeEnd(val);
+                if (yearRangeStart && val < yearRangeStart) setYearRangeStart(val);
+                if (selectedYear && selectedYear > val) setSelectedYear(val);
+              }}
+              className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
+            >
+              {allYears.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            {(yearRangeStart !== minYear || yearRangeEnd !== maxYear) && (
+              <button
+                onClick={() => {
+                  setYearRangeStart(minYear);
+                  setYearRangeEnd(maxYear);
+                }}
+                className="ml-1"
+                title="Reset range"
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
+            )}
+          </div>
+
           {/* Entity Filter */}
           <div className="relative">
             {entityFilter ? (
@@ -324,14 +403,14 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
                 <CalendarDays className="h-4 w-4" />
                 Years
                 <Badge variant="secondary" className="ml-auto">
-                  {yearCounts.reduce((sum, y) => sum + y.count, 0)} docs
+                  {filteredYearCounts.reduce((sum, y) => sum + y.count, 0)} docs
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 flex-1 overflow-auto">
               {viewMode === "chart" ? (
                 <div className="space-y-1">
-                  {yearCounts.map(({ year, count }) => (
+                  {filteredYearCounts.map(({ year, count }) => (
                     <button
                       key={year}
                       onClick={() => setSelectedYear(year)}
@@ -360,7 +439,7 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
                 </div>
               ) : (
                 <div className="divide-y divide-border">
-                  {yearCounts.map(({ year, count }) => (
+                  {filteredYearCounts.map(({ year, count }) => (
                     <button
                       key={year}
                       onClick={() => setSelectedYear(year)}
@@ -390,10 +469,10 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const idx = yearCounts.findIndex((y) => y.year === selectedYear);
-                      if (idx > 0) setSelectedYear(yearCounts[idx - 1].year);
+                      const idx = filteredYearCounts.findIndex((y) => y.year === selectedYear);
+                      if (idx > 0) setSelectedYear(filteredYearCounts[idx - 1].year);
                     }}
-                    disabled={yearCounts.findIndex((y) => y.year === selectedYear) === 0}
+                    disabled={filteredYearCounts.findIndex((y) => y.year === selectedYear) === 0}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -402,10 +481,10 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const idx = yearCounts.findIndex((y) => y.year === selectedYear);
-                      if (idx < yearCounts.length - 1) setSelectedYear(yearCounts[idx + 1].year);
+                      const idx = filteredYearCounts.findIndex((y) => y.year === selectedYear);
+                      if (idx < filteredYearCounts.length - 1) setSelectedYear(filteredYearCounts[idx + 1].year);
                     }}
-                    disabled={yearCounts.findIndex((y) => y.year === selectedYear) === yearCounts.length - 1}
+                    disabled={filteredYearCounts.findIndex((y) => y.year === selectedYear) === filteredYearCounts.length - 1}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -472,12 +551,12 @@ export function TimelineView({ onDocumentSelect }: TimelineViewProps) {
                               {monthEvents.map((event, index) => (
                                 <Card
                                   key={`${event.document_id}-${index}`}
-                                  className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+                                  className="cursor-pointer hover:border-primary hover:shadow-md transition-all"
                                   onClick={() => onDocumentSelect(event.document_id)}
                                 >
                                   <CardContent className="p-3">
                                     <div className="flex items-start gap-3">
-                                      <div className="p-2 bg-primary/10 rounded">
+                                      <div className="p-2 bg-secondary rounded">
                                         <FileText className="h-4 w-4 text-primary" />
                                       </div>
                                       <div className="flex-1 min-w-0">

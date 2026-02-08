@@ -10,6 +10,7 @@ import {
   Calendar,
   Bookmark,
   Settings,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const navItems = [
   { id: "faces", label: "Faces", icon: ScanFace, href: "/faces" },
   { id: "graph", label: "Graph", icon: Network, href: "/graph" },
   { id: "timeline", label: "Timeline", icon: Calendar, href: "/timeline" },
+  { id: "discoveries", label: "Discoveries", icon: Eye, href: "/discoveries" },
 ];
 
 const bottomNavItems = [
@@ -42,7 +44,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-16 lg:w-56 bg-card border-r border-border flex flex-col">
+    <aside className="w-16 lg:w-56 border-r border-border flex flex-col" style={{ backgroundColor: "var(--sidebar-bg)" }}>
       <nav className="flex-1 p-2">
         <ul className="space-y-1">
           {navItems.map((item) => {

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingState, EmptyState } from "@/components/ui/Spinner";
-import { search, SearchResponse, SearchHit } from "@/lib/api";
+import { search, SearchResponse, SearchHit, getDocumentStats } from "@/lib/api";
 import { debounce, truncateText } from "@/lib/utils";
 
 interface SearchViewProps {
@@ -20,6 +20,11 @@ export function SearchView({ onDocumentSelect, onEntitySelect }: SearchViewProps
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [docCount, setDocCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    getDocumentStats().then((stats) => setDocCount(stats.total)).catch(() => {});
+  }, []);
 
   const performSearch = useCallback(
     async (searchQuery: string, pageNum: number) => {
@@ -73,7 +78,7 @@ export function SearchView({ onDocumentSelect, onEntitySelect }: SearchViewProps
           />
         </div>
         <p className="text-sm text-muted-foreground mt-2">
-          Search through ~3,150 DOJ documents by content, not just titles
+          Search through {docCount ? docCount.toLocaleString() : "..."} DOJ documents by content, not just titles
         </p>
       </div>
 
@@ -160,7 +165,7 @@ function SearchResultCard({
 
   return (
     <Card
-      className="cursor-pointer hover:border-primary/50 transition-colors"
+      className="cursor-pointer hover:border-primary transition-colors"
       onClick={onClick}
     >
       <CardContent className="p-4">

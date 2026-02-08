@@ -10,43 +10,43 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Dark investigative theme
-        background: "#0a0a0f",
-        foreground: "#e5e5e5",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         card: {
-          DEFAULT: "#111118",
-          foreground: "#e5e5e5",
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
         },
         primary: {
-          DEFAULT: "#3b82f6",
-          foreground: "#ffffff",
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
         },
         secondary: {
-          DEFAULT: "#1e1e2e",
-          foreground: "#a1a1aa",
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
         },
         accent: {
-          DEFAULT: "#f59e0b",
-          foreground: "#000000",
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
         },
         muted: {
-          DEFAULT: "#18181b",
-          foreground: "#71717a",
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
         },
         destructive: {
-          DEFAULT: "#ef4444",
-          foreground: "#ffffff",
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
         },
-        border: "#27272a",
-        ring: "#3b82f6",
-        // Entity type colors
+        border: "var(--border)",
+        ring: "var(--ring)",
+        // Entity type colors (static)
         person: "#ef4444",
         organization: "#22c55e",
         location: "#8b5cf6",
         date: "#06b6d4",
       },
       fontFamily: {
-        mono: ["JetBrains Mono", "Menlo", "Monaco", "monospace"],
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "Menlo", "Monaco", "monospace"],
       },
       animation: {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",

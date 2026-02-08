@@ -246,7 +246,7 @@ export function EntityExplorer({
                       <button
                         key={doc.id}
                         onClick={() => onDocumentSelect(doc.id)}
-                        className="w-full p-3 rounded-lg bg-muted hover:bg-muted/80 text-left transition-colors"
+                        className="w-full p-3 rounded-lg bg-muted hover:bg-secondary text-left transition-colors"
                       >
                         <p className="font-medium truncate">{doc.filename}</p>
                         {doc.title && (

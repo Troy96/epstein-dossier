@@ -4,28 +4,49 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 90%;
+    --background: #0b0d1a;
+    --foreground: #e2e4ed;
+    --card: #111425;
+    --card-foreground: #e2e4ed;
+    --primary: #4f8ff7;
+    --primary-foreground: #ffffff;
+    --secondary: #1a1d30;
+    --secondary-foreground: #a0a4b8;
+    --accent: #6c8eef;
+    --accent-foreground: #ffffff;
+    --muted: #151829;
+    --muted-foreground: #6b7194;
+    --border: #232740;
+    --ring: #4f8ff7;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --sidebar-bg: #090b16;
+    --gradient-orb-1: rgba(79, 143, 247, 0.15);
+    --gradient-orb-2: rgba(108, 142, 239, 0.10);
+    --gradient-orb-3: rgba(124, 58, 237, 0.08);
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.01em;
+    font-weight: 700;
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -48,7 +69,8 @@
 
 /* Search highlight */
 mark {
-  @apply bg-accent/30 text-foreground px-0.5 rounded;
+  @apply text-foreground px-0.5 rounded;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /* Evidence board aesthetic */
@@ -66,3 +88,4 @@ mark {
   @apply stroke-border stroke-1;
   stroke-dasharray: 4 2;
 }
+

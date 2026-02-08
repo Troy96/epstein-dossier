@@ -16,12 +16,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           "disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-primary text-primary-foreground hover:bg-primary/90":
+            "bg-primary text-primary-foreground hover:brightness-110":
               variant === "default",
             "border border-border bg-transparent hover:bg-secondary":
               variant === "outline",
             "hover:bg-secondary hover:text-foreground": variant === "ghost",
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90":
+            "bg-destructive text-destructive-foreground hover:brightness-110":
               variant === "destructive",
           },
           {

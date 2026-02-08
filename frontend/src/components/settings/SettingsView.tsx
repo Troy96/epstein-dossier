@@ -10,12 +10,16 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Palette,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingState } from "@/components/ui/Spinner";
 import { getDocumentStats } from "@/lib/api";
+import { useTheme } from "@/contexts/ThemeContext";
+import { THEMES, type ThemeId } from "@/lib/themes";
 
 interface ServiceStatus {
   name: string;
@@ -119,6 +123,8 @@ export function SettingsView() {
     }
   };
 
+  const { themeId, setTheme } = useTheme();
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -126,6 +132,70 @@ export function SettingsView() {
         <Settings className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">Settings</h1>
       </div>
+
+      {/* Appearance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Appearance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {THEMES.map((t) => {
+              const active = themeId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTheme(t.id)}
+                  className={`relative rounded-lg border-2 p-3 text-left transition-all ${
+                    active
+                      ? "border-[var(--ring)] ring-1 ring-[var(--ring)]"
+                      : "border-transparent hover:border-[var(--border)]"
+                  }`}
+                  style={{ backgroundColor: t.vars["--card"] }}
+                >
+                  {active && (
+                    <div
+                      className="absolute top-2 right-2 rounded-full p-0.5"
+                      style={{ backgroundColor: t.vars["--primary"] }}
+                    >
+                      <Check className="h-3 w-3" style={{ color: t.vars["--primary-foreground"] }} />
+                    </div>
+                  )}
+                  <div className="flex gap-1.5 mb-2">
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: t.vars["--primary"] }}
+                    />
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: t.vars["--accent"] }}
+                    />
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: t.vars["--muted"] }}
+                    />
+                  </div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: t.vars["--foreground"] }}
+                  >
+                    {t.name}
+                  </p>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: t.vars["--muted-foreground"] }}
+                  >
+                    {t.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Service Status */}
       <Card>
